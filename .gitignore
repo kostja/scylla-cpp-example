@@ -1,0 +1,11 @@
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+cpp-driver/
+libcassandra.so
+libcassandra.so.2
+libcassandra.so.2.16.1
+scylla-cxx-example
+
