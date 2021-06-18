@@ -18,9 +18,10 @@ endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/cpp-driver EXCLUDE_FROM_ALL)
 
+include_directories(${PROJECT_SOURCE_DIR}/cpp-driver/include)
 
-add_executable(scylla-cxx-example main.cpp)
+add_executable(scylla-cxx-example scylla-cxx-example.cpp)
 
-target_link_libraries(scylla-cxx-example cassandra)
+target_link_libraries(scylla-cxx-example cassandra pthread)
 
 
