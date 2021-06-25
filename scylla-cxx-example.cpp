@@ -113,6 +113,12 @@ void test_thread(const char *hosts) {
 
 	cass_cluster_set_serial_consistency(cluster, CASS_CONSISTENCY_LOCAL_SERIAL);
 
+	unsigned used_hosts_per_remote_dc = 0;
+	cass_bool_t allow_remote_dcs_for_local_cl = cass_false;
+	cass_cluster_set_load_balance_dc_aware(cluster, "DC1",
+					       used_hosts_per_remote_dc,
+					       allow_remote_dcs_for_local_cl);
+
 	/* Add contact points */
 	cass_cluster_set_contact_points(cluster, hosts);
 
