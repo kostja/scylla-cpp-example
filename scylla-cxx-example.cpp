@@ -111,6 +111,8 @@ void test_thread(const char *hosts) {
 
 	cass_cluster_set_credentials(cluster, username, password);
 
+	cass_cluster_set_serial_consistency(cluster, CASS_CONSISTENCY_LOCAL_SERIAL);
+
 	/* Add contact points */
 	cass_cluster_set_contact_points(cluster, hosts);
 
