@@ -7,14 +7,18 @@
 #include <algorithm>
 #include <stdio.h>
 #include <set>
+#include "date.h"
+#include "time.h"
 #include <iostream>
 #include <mutex>
 #include <vector>
 #include <thread>
 #include <string>
 
-const int ITERATIONS = 1000;
-const int THREADS = 32;
+using namespace date;
+
+const int ITERATIONS = 10;
+const int THREADS = 8;
 
 std::set<int> track_set;
 std::mutex track_set_lock;
@@ -29,7 +33,7 @@ void track(int key) {
 	std::lock_guard<std::mutex> guard(track_set_lock);
 
 	if (!track_set.insert(key).second) {
-		std::cerr << "================= DUPLICATE FOUND: " << key << " =================" << std::endl;
+		std::cerr << std::chrono::system_clock::now() << " DUPLICATE FOUND: " << key << " =================" << std::endl;
 	}
 }
 
@@ -49,7 +53,7 @@ void statement(CassSession* session, std::string str) {
 		const char* message;
 		size_t message_length;
 		cass_future_error_message(result_future, &message, &message_length);
-		fprintf(stderr, "Unable to run statement: '%.*s'\n", (int)message_length, message);
+		std::cerr << std::chrono::system_clock::now() << "Unable to run statement: " << message << std::endl;
 	}
 
 	cass_statement_free(statement);
@@ -58,7 +62,7 @@ void statement(CassSession* session, std::string str) {
 
 void insert(CassSession* session, int n) {
 	std::string query = "INSERT INTO test.test (lock_key, bucket_id) VALUES(3, "
-		+ std::to_string(n) + ") IF NOT EXISTS USING TTL 60";
+		+ std::to_string(n) + ") IF NOT EXISTS USING TTL 10";
 	/* Build statement and execute query */
 	CassStatement* statement = cass_statement_new(query.c_str(), 0);
 
@@ -85,7 +89,7 @@ void insert(CassSession* session, int n) {
 		const char* message;
 		size_t message_length;
 		cass_future_error_message(result_future, &message, &message_length);
-		fprintf(stderr, "Unable to run query: '%.*s'\n", (int)message_length, message);
+//		std::cerr << std::chrono::system_clock::now() << " Unable to run insert : " << message << std::endl;
 	}
 
 	cass_statement_free(statement);
@@ -118,7 +122,6 @@ void test_thread(const char *hosts) {
 	cass_cluster_set_load_balance_dc_aware(cluster, "DC1",
 					       used_hosts_per_remote_dc,
 					       allow_remote_dcs_for_local_cl);
-
 	/* Add contact points */
 	cass_cluster_set_contact_points(cluster, hosts);
 
@@ -134,7 +137,7 @@ void test_thread(const char *hosts) {
 		        }, session);
 		}
 		for (int i = 0; i < ITERATIONS; i++) {
-			insert(session, keys[i]);
+			insert(session, time(0)/5);
 		}
 	} else {
 		/* Handle error */
@@ -157,17 +160,24 @@ void test_thread(const char *hosts) {
 int main(int argc, char* argv[]) {
 	// cass_log_set_level(CASS_LOG_DEBUG);
 
-	const char* hosts = "127.0.0.1";
+//	const char* hosts = "127.0.0.13";
+//	const char* hosts = "172.17.0.2";
+	const char* hosts = "127.0.0.15";
 	if (argc > 1) {
 		hosts = argv[1];
 	}
 
-	std::vector<std::shared_ptr<std::thread>> threads;
-	for (int i = 0; i < THREADS; i++) {
-		threads.push_back(std::make_shared<std::thread>(test_thread, hosts));
-	}
-	for (int i = 0; i < THREADS; i++) {
-		threads[i]->join();
+	while (true) {
+		std::vector<std::shared_ptr<std::thread>> threads;
+		for (int i = 0; i < THREADS; i++) {
+			threads.push_back(std::make_shared<std::thread>(test_thread, hosts));
+		}
+		for (int i = 0; i < THREADS; i++) {
+			threads[i]->join();
+		}
+//		std::cout << "done, sleeping for 10 seconds" << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(15));
+		clear_set();
 	}
 
 	return 0;
