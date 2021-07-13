@@ -8,4 +8,4 @@ libcassandra.so
 libcassandra.so.2
 libcassandra.so.2.16.1
 scylla-cxx-example
-
+uuid-parser
